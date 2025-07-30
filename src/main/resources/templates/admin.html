@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .row {
+            background-color: #F0E68C;
+        }
+        .form-container {
+            display: none;
+        }
+        .row.mb-2 {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            cursor: pointer;
+        }
+        .clickable-label {
+            position: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 30px;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="_navbar.html"></div>
+<div class="container mt-5">
+    <div class="row mb-2">
+        <label for="addFlightForm" class="clickable-label">Add Flight</label>
+    </div>
+    <div class="row mb-2">
+        <label for="uploadForm" class="clickable-label">Add Flights By Uploading File</label>
+    </div>
+    <div class="row mb-2">
+        <label for="cancelFlight" class="clickable-label">Cancel Flight</label>
+    </div>
+    <div id="addFlightForm" class="form-container mt-3">
+        <form th:action="@{/admin/add_flight}" method="post" th:object="${addFlightReqDTO}">
+            <label for="journeyDate">Date:</label>
+            <input type="date" id="journeyDate" name="journeyDate" th:field="*{journeyDate}" th:min="${#dates.format(#dates.createNow(), 'yyyy-MM-dd')}" onchange="updateFlightIDs()">
+
+            <br>
+            <label>Select Flights: </label>
+            <br>
+            <button type="button" onclick="toggleSelectAll()">Select All</button>
+            <div th:each="flightID : ${flightIDs}">
+                <input type="checkbox" th:field="*{flightIDs}" th:value="${flightID}" />
+                <span th:text="${flightID}"></span>
+            </div>
+
+            <button type="submit">Confirm</button>
+        </form>
+    </div>
+    <div id="uploadForm" class="form-container mt-3">
+        <h4>Add flights by uploading <b>CSV</b> file</h4>
+        <form th:action="@{/admin/upload}" method="post" enctype="multipart/form-data">
+            <input id="input-file" type="file" name="file" />
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+    <div id="cancelFlight" class="form-container mt-3">
+        <form th:action="@{/admin/cancel_flight}" method="post" th:object="${addFlightReqDTO}">
+            <label for="cancelDate">First Select the Date:</label><br>
+            <input type="date" id="cancelDate" name="journeyDate" th:field="*{journeyDate}" th:min="${#dates.format(#dates.createNow(), 'yyyy-MM-dd')}" onchange="getFlightIDsToCancel()">
+
+            <br><br>
+            <div id="flightIDsContainer" style="display: none;">
+                <div th:each="flightID : ${flightIDsToCancel}">
+                    <input type="checkbox" th:field="*{flightIDs}" th:value="${flightID}" />
+                    <span th:text="${flightID}"></span>
+                </div>
+            </div>
+
+            <button type="submit" id="confirmButton" class="btn btn-danger btn-sm" style="display: none;">Cancel Selected Flight</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function toggleSelectAll() {
+        var checkboxes = document.querySelectorAll('#addFlightForm input[type="checkbox"]');
+        var selectAllButton = document.querySelector('#addFlightForm button');
+
+        var areAllChecked = true;
+        checkboxes.forEach(function(checkbox) {
+            if (!checkbox.checked) {
+                areAllChecked = false;
+            }
+        });
+
+        checkboxes.forEach(function(checkbox) {
+            checkbox.checked = !areAllChecked;
+        });
+
+        selectAllButton.textContent = areAllChecked ? 'Select All' : 'Unselect All';
+    }
+
+    function updateFlightIDs() {
+    var selectedDate = document.getElementById('journeyDate').value;
+    var xhrAdded = new XMLHttpRequest();
+    xhrAdded.open('GET', '/schedule/flightids?date=' + selectedDate, true);
+    xhrAdded.onload = function() {
+        if (xhrAdded.status === 200) {
+            var addedFlightIDs = JSON.parse(xhrAdded.responseText);
+            var xhrCanceled = new XMLHttpRequest();
+            xhrCanceled.open('GET', '/schedule/canceled-flightids?date=' + selectedDate, true);
+            xhrCanceled.onload = function() {
+                if (xhrCanceled.status === 200) {
+                    var canceledFlightIDs = JSON.parse(xhrCanceled.responseText);
+                    var checkboxes = document.querySelectorAll('#addFlightForm input[type="checkbox"]');
+                    checkboxes.forEach(function(checkbox) {
+                        checkbox.checked = addedFlightIDs.includes(checkbox.value);
+                        if (canceledFlightIDs.includes(checkbox.value)) {
+                            checkbox.disabled = true;
+                            checkbox.parentElement.style.textDecoration = 'line-through';
+                        }
+                    });
+                }
+            };
+            xhrCanceled.send();
+        }
+    };
+    xhrAdded.send();
+}
+
+    function getFlightIDsToCancel() {
+        var selectedDate = document.getElementById("cancelDate").value;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/schedule/flightids?date=" + selectedDate, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var flightIDs = JSON.parse(xhr.responseText);
+
+                var flightIDsContainer = document.getElementById("flightIDsContainer");
+                flightIDsContainer.style.display = "block";
+                flightIDsContainer.innerHTML = "";
+                flightIDs.forEach(function (flightID) {
+                    var checkboxDiv = document.createElement("div");
+                    var checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.name = "flightIDs";
+                    checkbox.value = flightID;
+                    var span = document.createElement("span");
+                    span.textContent = flightID;
+                    checkboxDiv.appendChild(checkbox);
+                    checkboxDiv.appendChild(span);
+                    flightIDsContainer.appendChild(checkboxDiv);
+                });
+
+                var confirmButton = document.getElementById("confirmButton");
+                confirmButton.style.display = flightIDs.length > 0 ? "block" : "none";
+            }
+        };
+        xhr.send();
+    }
+
+    $(document).ready(function() {
+        $('#journeyDate').val(new Date().toISOString().slice(0, 10));
+
+        $('.row.mb-2').on('click', function() {
+            var target = $(this).find('label').attr('for');
+            $('.form-container').hide();
+            $('#' + target).show();
+        });
+    });
+</script>
+</body>
+</html>

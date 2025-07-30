@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>My Profile</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .green-row {
+            background-color: #D2F1B6;
+        }
+        .red-row {
+            background-color: #F1B9B6;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="_navbar.html"></div>
+<div class="container">
+    <h1 th:text="'Hello ' + ${passengerName}" class="mt-5"></h1>
+    <h3 class="mb-4">Your journey with us....</h3>
+    <table id="ticketsTable" class="table">
+        <thead class="thead-dark">
+        <tr>
+            <th>Ticket#</th>
+            <th>Journey Date</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Class</th>
+            <th>Seats</th>
+            <th>Fare</th>
+            <th>Status</th>
+            <th>PDF</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="ticket : ${myTickets}">
+            <td th:text="${ticket.id}"></td>
+            <td th:text="${ticket.date}"></td>
+            <td th:text="${ticket.from}"></td>
+            <td th:text="${ticket.to}"></td>
+            <td th:text="${ticket.seatClassType}"></td>
+            <td th:text="${ticket.seats}"></td>
+            <td th:text="${ticket.totalFare}"></td>
+            <td th:text="${ticket.flightStatus}"></td>
+            <td><a th:href="@{'/passenger/showTicket/' + ${ticket.id}}" class="btn btn-primary btn-sm">Download</a></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var table = document.getElementById('ticketsTable');
+      var rows = table.getElementsByTagName('tr');
+      for (var i = 0; i < rows.length; i++) {
+        var cells = rows[i].getElementsByTagName('td');
+        if (cells.length > 0) {
+            var status = cells[7].innerText.trim();
+            if (status === 'UPCOMING')
+                rows[i].classList.add('green-row');
+            else if (status === 'CANCELLED')
+                rows[i].classList.add('red-row');
+        }
+      }
+    });
+</script>
+</body>
+</html>

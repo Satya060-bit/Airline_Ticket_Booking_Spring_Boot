@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Failed</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container.mt-5 {
+          text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="_navbar.html"></div>
+<div class="container mt-5">
+    <h4 th:text="${errMsg}" class="text-secondary text-danger"></h4>
+    <a th:href="@{/}">
+        <img th:src="@{/images/retry.jpg}" alt="retry" style="width: 15%; height: 15%;">
+    </a>
+</div>
+</body>
+</html>
